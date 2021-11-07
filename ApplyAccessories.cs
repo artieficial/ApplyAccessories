@@ -305,15 +305,14 @@ public class ApplyAccessories : MonoBehaviour
         AnimatorState target = stateMachine.AddState(targetName);
 
         AnimatorTransition defaultTransition = new AnimatorTransition {
-            destinationState = wait,
+            destinationState = wait
         };
         AnimatorTransition[] entryTransitions = { defaultTransition };
         stateMachine.entryTransitions = entryTransitions;
 
         AnimatorCondition enableCondition = new AnimatorCondition {
-            mode = AnimatorConditionMode.Equals,
-            parameter = targetName,
-            threshold = 1.0f
+            mode = AnimatorConditionMode.If,
+            parameter = targetName
         };
         AnimatorCondition[] enableConditions = { enableCondition };
         AnimatorStateTransition enableTransition = new AnimatorStateTransition {
@@ -324,9 +323,8 @@ public class ApplyAccessories : MonoBehaviour
         wait.AddTransition(enableTransition);
 
         AnimatorCondition disableCondition = new AnimatorCondition {
-            mode = AnimatorConditionMode.Equals,
-            parameter = targetName,
-            threshold = 0.0f
+            mode = AnimatorConditionMode.IfNot,
+            parameter = targetName
         };
         AnimatorCondition[] disableConditions = { disableCondition };
         AnimatorStateTransition disableTransition = new AnimatorStateTransition {
