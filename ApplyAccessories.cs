@@ -305,14 +305,15 @@ public class ApplyAccessories : MonoBehaviour
         AnimatorState target = stateMachine.AddState(targetName);
 
         AnimatorTransition defaultTransition = new AnimatorTransition {
-            destinationState = wait
+            destinationState = wait,
         };
         AnimatorTransition[] entryTransitions = { defaultTransition };
         stateMachine.entryTransitions = entryTransitions;
 
         AnimatorCondition enableCondition = new AnimatorCondition {
-            mode = AnimatorConditionMode.If,
-            parameter = targetName
+            mode = AnimatorConditionMode.Equals,
+            parameter = targetName,
+            threshold = 1.0f
         };
         AnimatorCondition[] enableConditions = { enableCondition };
         AnimatorStateTransition enableTransition = new AnimatorStateTransition {
@@ -323,8 +324,9 @@ public class ApplyAccessories : MonoBehaviour
         wait.AddTransition(enableTransition);
 
         AnimatorCondition disableCondition = new AnimatorCondition {
-            mode = AnimatorConditionMode.IfNot,
-            parameter = targetName
+            mode = AnimatorConditionMode.Equals,
+            parameter = targetName,
+            threshold = 0.0f
         };
         AnimatorCondition[] disableConditions = { disableCondition };
         AnimatorStateTransition disableTransition = new AnimatorStateTransition {
@@ -419,6 +421,11 @@ public class ApplyAccessories : MonoBehaviour
         AssetDatabase.SaveAssets();
     }
 
+    bool compareTransforms(Transform t1, Transform t2)
+    {
+        return (t1.position.Equals(t2.position) && t1.rotation.Equals(t2.rotation) && t1.localScale.Equals(t2.localScale));
+    }
+
     [ContextMenu("Reassign Bones")]
     public void Reassign()
     {
@@ -510,7 +517,7 @@ public class ApplyAccessories : MonoBehaviour
                 {
                     if (sourceBones[s].name.Contains(targetBones[t].name)) {
                         Component[] components = sourceBones[s].gameObject.GetComponents<Component>();
-                        if ((components.Length > 1 || targetNestArmature) && sourceBones[s].name != targetBones[t].name)
+                        if ((components.Length > 1 || targetNestArmature) && (!compareTransforms(sourceBones[s], targetBones[t]) || sourceBones[s].name != targetBones[t].name))
                         {
                             sourceBones[s].parent = targetBones[t];
                         }
