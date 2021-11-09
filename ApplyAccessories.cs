@@ -421,11 +421,6 @@ public class ApplyAccessories : MonoBehaviour
         AssetDatabase.SaveAssets();
     }
 
-    bool compareTransforms(Transform t1, Transform t2)
-    {
-        return (t1.position.Equals(t2.position) && t1.rotation.Equals(t2.rotation) && t1.localScale.Equals(t2.localScale));
-    }
-
     [ContextMenu("Reassign Bones")]
     public void Reassign()
     {
@@ -508,17 +503,25 @@ public class ApplyAccessories : MonoBehaviour
             Debug.LogFormat("Starting to reassign bones for {0}", meshRenderer.gameObject.name);
 
             Transform[] sourceBones = meshRenderer.bones;
-            Transform[] targetBones = targetArmature.GetComponentsInChildren<Transform>();
+            List<Transform> targetBones = new List<Transform>(targetArmature.GetComponentsInChildren<Transform>());
 
             for (int s = 0; s < sourceBones.Length; s++)
             {
                 bool matched = false;
-                for (int t = 0; t < targetBones.Length; t++)
+                for (int t = 0; t < targetBones.Count; t++)
                 {
                     if (sourceBones[s].name.Contains(targetBones[t].name)) {
                         Component[] components = sourceBones[s].gameObject.GetComponents<Component>();
-                        if ((components.Length > 1 || targetNestArmature) && (!compareTransforms(sourceBones[s], targetBones[t]) || sourceBones[s].name != targetBones[t].name))
+                        if (components.Length > 1 || targetNestArmature)
                         {
+                            if (sourceBones[s].name == targetBones[t].name) {
+                                sourceBones[s].name += $"_{meshRenderer.gameObject.name}";
+                            }
+                            if (sourceBones[s].name == targetBones[t].name) {
+                                sourceBones[s] = targetBones[t];
+                                targetBones.RemoveAt(t);
+                                break;
+                            }
                             sourceBones[s].parent = targetBones[t];
                         }
                         else
@@ -526,17 +529,26 @@ public class ApplyAccessories : MonoBehaviour
                             sourceBones[s] = targetBones[t];
                         }
                         
+                        targetBones.RemoveAt(t);
                         break;
                     }
                 }
-                if (!matched)
+                if (!matched && !targetNestArmature)
                 {
                     string parentName = sourceBones[s].parent.name;
-                    for (int t = 0; t < targetBones.Length; t++)
+                    for (int t = 0; t < targetBones.Count; t++)
                     {
                         if (parentName.Contains(targetBones[t].name))
                         {
                             sourceBones[s].parent = targetBones[t];
+                            break;
+                        }
+                    }
+                    for (int t = 0; t < sourceBones.Length; t++)
+                    {
+                        if (parentName.Contains(sourceBones[t].name))
+                        {
+                            sourceBones[s].parent = sourceBones[t];
                             break;
                         }
                     }
