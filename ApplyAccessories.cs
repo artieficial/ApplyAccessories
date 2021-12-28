@@ -12,267 +12,120 @@ using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
-[CustomEditor(typeof(ApplyAccessories))]
-public class ApplyAccessoriesEditor : Editor
-{
-    public Transform targetArmature;
-    public VRCAvatarDescriptor targetAvatarDescriptor;
-    public AnimationClip targetFemaleAnimationClip;
-    public bool targetNestArmature;
-    public Transform targetRootBone;
-    public VRCExpressionsMenu targetSubMenu;
-    public SkinnedMeshRenderer[] associatedMeshRenderers;
-    public Dictionary<SkinnedMeshRenderer, string[]> associatedBlendShapesMap;
-    public string femaleBlendShapeName = "";
-    bool showOverrideArmature = true;
-    bool showFemaleBlendShapes = true;
-    bool showAssociatedMeshRenderers = true;
-    bool[] showPanelsForAssociatedMeshRenderers = {};
-
-    public override void OnInspectorGUI()
-    {
-        DrawDefaultInspector();
-        
-        ApplyAccessories applyAccessories = (ApplyAccessories)target;
-
-        // Make sure that all the values are loaded from the actual component
-        targetArmature = applyAccessories.getTargetArmature();
-        targetAvatarDescriptor = applyAccessories.getTargetAvatarDescriptor();
-        targetFemaleAnimationClip = applyAccessories.getTargetFemaleAnimationClip();
-        targetNestArmature = applyAccessories.getTargetNestArmature();
-        targetRootBone = applyAccessories.getTargetRootBone();
-        targetSubMenu = applyAccessories.getTargetSubMenu();
-        associatedBlendShapesMap = applyAccessories.getAssociatedBlendShapes();
-        associatedMeshRenderers = applyAccessories.getAssociatedMeshRenderers();
-        femaleBlendShapeName = applyAccessories.getFemaleBlendShapeName();
-
-        // Set up top level settings
-        targetAvatarDescriptor = EditorGUILayout.ObjectField("Target Avatar Descriptor", targetAvatarDescriptor, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
-        targetSubMenu = EditorGUILayout.ObjectField("Target Submenu (Optional)", targetSubMenu, typeof(VRCExpressionsMenu), true) as VRCExpressionsMenu;
-        targetNestArmature = EditorGUILayout.Toggle("Nest Armature", targetNestArmature);
-
-        // Allow for setting the armature manually
-        showOverrideArmature = EditorGUILayout.BeginFoldoutHeaderGroup(showOverrideArmature, "Override Default Armature (Optional)");
-        if (showOverrideArmature)
-        {
-            targetArmature = EditorGUILayout.ObjectField("Target Armature", targetArmature, typeof(Transform), true) as Transform;
-            targetRootBone = EditorGUILayout.ObjectField("Target Root Bone", targetRootBone, typeof(Transform), true) as Transform;
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-
-        // Determine whether or not the accessory include female blend shapes and apply them
-        showFemaleBlendShapes = EditorGUILayout.BeginFoldoutHeaderGroup(showFemaleBlendShapes, "Set Female Blendshapes (Optional)");
-        if (showFemaleBlendShapes)
-        {
-            targetFemaleAnimationClip = EditorGUILayout.ObjectField("Animation Clip", targetFemaleAnimationClip, typeof(AnimationClip), true) as AnimationClip;
-            femaleBlendShapeName = EditorGUILayout.TextField("Blendshape Name", femaleBlendShapeName);
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-
-        // Determine if there are any other mesh renderers that interact with the accessories
-        showAssociatedMeshRenderers = EditorGUILayout.BeginFoldoutHeaderGroup(showAssociatedMeshRenderers, "Set Associated Mesh Renderers (Optional)");
-        if (showAssociatedMeshRenderers)
-        {
-            int numAssociatedMeshRenderers = EditorGUILayout.IntField("Length", associatedMeshRenderers.Length);
-            if (numAssociatedMeshRenderers != associatedMeshRenderers.Length)
-            {
-                Array.Resize(ref associatedMeshRenderers, numAssociatedMeshRenderers);
-                
-            }
-            
-            for (int i = 0; i < numAssociatedMeshRenderers; i++)
-            {
-                associatedMeshRenderers[i] = EditorGUILayout.ObjectField($"Mesh Renderer #{i + 1}", associatedMeshRenderers[i], typeof(SkinnedMeshRenderer), true) as SkinnedMeshRenderer;
-                if (associatedMeshRenderers[i] != null && !associatedBlendShapesMap.ContainsKey(associatedMeshRenderers[i]))
-                {
-                    string[] blendShapes = {};
-                    associatedBlendShapesMap[associatedMeshRenderers[i]] = blendShapes;
-                }
-            }
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-
-        if (associatedMeshRenderers.Length != showPanelsForAssociatedMeshRenderers.Length)
-        {
-            Array.Resize(ref showPanelsForAssociatedMeshRenderers, associatedMeshRenderers.Length);
-        }
-
-        for (int i = 0; i < associatedMeshRenderers.Length; i++)
-        {
-            if (associatedMeshRenderers[i] != null && associatedBlendShapesMap.ContainsKey(associatedMeshRenderers[i]))
-            {
-                showPanelsForAssociatedMeshRenderers[i] = EditorGUILayout.BeginFoldoutHeaderGroup(showPanelsForAssociatedMeshRenderers[i], $"Blendshapes for Mesh Renderer #{i + 1}");
-                string[] associatedBlendShapes = associatedBlendShapesMap[associatedMeshRenderers[i]];
-                int numAssociatedBlendShapes = EditorGUILayout.IntField("Length", associatedBlendShapes.Length);
-                Array.Resize(ref associatedBlendShapes, numAssociatedBlendShapes);
-
-                for (int j = 0; j < numAssociatedBlendShapes; j++)
-                {
-                    associatedBlendShapes[j] = EditorGUILayout.TextField($"Blendshape #{j + 1}", associatedBlendShapes[j]);
-                } 
-
-                associatedBlendShapesMap[associatedMeshRenderers[i]] = associatedBlendShapes;
-                EditorGUILayout.EndFoldoutHeaderGroup();
-            }
-        }
-
-        // Apply everything back to the main class
-        applyAccessories.setTargetArmature(targetArmature);
-        applyAccessories.setTargetAvatarDescriptor(targetAvatarDescriptor);
-        applyAccessories.setTargetFemaleAnimationClip(targetFemaleAnimationClip);
-        applyAccessories.setTargetNestArmature(targetNestArmature);
-        applyAccessories.setTargetRootBone(targetRootBone);
-        applyAccessories.setTargetSubMenu(targetSubMenu);
-        applyAccessories.setAssociatedBlendShapes(associatedBlendShapesMap);
-        applyAccessories.setAssociatedMeshRenderers(associatedMeshRenderers);
-        applyAccessories.setFemaleBlendShapeName(femaleBlendShapeName);
-
-        // Apply actual changes
-        if (GUILayout.Button("Apply Changes"))
-        {
-            applyAccessories.Reassign();
-        }
-    }
-}
-
 [ExecuteInEditMode]
-public class ApplyAccessories : MonoBehaviour
+public class ApplyAccessories
 {
-    private Transform targetArmature;
-    private VRCAvatarDescriptor targetAvatarDescriptor;
-    private VRCExpressionParameters targetAvatarParameters;
-    private AnimationClip targetFemaleAnimationClip;
-    private bool targetNestArmature;
-    private Transform targetRootBone;
-    private VRCExpressionsMenu targetSubMenu;
-    private Dictionary<SkinnedMeshRenderer, string[]> associatedBlendShapes = new Dictionary<SkinnedMeshRenderer, string[]>();
-    private SkinnedMeshRenderer[] associatedMeshRenderers = {};
-   
-    private string femaleBlendShapeName;
+    private Transform _armature;
+    private VRCExpressionParameters _avatarParameters;
 
-    public VRCAvatarDescriptor getTargetAvatarDescriptor()
+    private VRCAvatarDescriptor _avatar;
+    private GameObject _accessory;
+    private bool _nestArmature;
+
+    private bool _reuseMenu;
+    private VRCExpressionsMenu _menu;
+    private Dictionary<string, VRCExpressionsMenu> _menus = new Dictionary<string, VRCExpressionsMenu>();
+
+    private Dictionary<string, AnimationClip> _customAnims = new Dictionary<string, AnimationClip>();
+
+    private AnimationClip _femaleAnim;
+    private string _femaleBlendShape;
+
+    private SkinnedMeshRenderer[] _associatedAccessories = {};
+    private Dictionary<SkinnedMeshRenderer, string[]> _associatedAccessoryBlendShapes = new Dictionary<SkinnedMeshRenderer, string[]>();
+
+    public void setAvatar(VRCAvatarDescriptor avatar)
     {
-        return targetAvatarDescriptor;
+        _avatar = avatar;
     }
 
-    public void setTargetAvatarDescriptor(VRCAvatarDescriptor target)
+    public void setAccessory(GameObject accessory)
     {
-        targetAvatarDescriptor = target;
+        _accessory = accessory;
     }
 
-    public bool getTargetNestArmature()
+    public void setNestArmature(bool nestArmature)
     {
-        return targetNestArmature;
+        _nestArmature = nestArmature;
     }
 
-    public void setTargetNestArmature(bool target)
+    public void setReuseMenu(bool reuseMenu)
     {
-        targetNestArmature = target;
+        _reuseMenu = reuseMenu;
     }
 
-    public Dictionary<SkinnedMeshRenderer, string[]> getAssociatedBlendShapes()
+    public void setMenu(VRCExpressionsMenu menu)
     {
-        return associatedBlendShapes;
+        _menu = menu;
     }
 
-    public void setAssociatedBlendShapes(Dictionary<SkinnedMeshRenderer, string[]> blendShapes)
+    public void setMenus(Dictionary<string, VRCExpressionsMenu> menus)
     {
-        associatedBlendShapes = blendShapes;
+        _menus = menus;
     }
 
-    public SkinnedMeshRenderer[] getAssociatedMeshRenderers()
+    public void setCustomAnims(Dictionary<string, AnimationClip> customAnims)
     {
-        return associatedMeshRenderers;
+        _customAnims = customAnims;
     }
 
-    public void setAssociatedMeshRenderers(SkinnedMeshRenderer[] meshRenderers)
+    public void setFemaleAnim(AnimationClip femaleAnim)
     {
-        associatedMeshRenderers = meshRenderers;
+        _femaleAnim = femaleAnim;
     }
 
-    public Transform getTargetArmature()
+    public void setFemaleBlendShape(string femaleBlendShape)
     {
-        return targetArmature;
+        _femaleBlendShape = femaleBlendShape;
     }
 
-    public void setTargetArmature(Transform target)
+    public void setAssociatedAccessories(SkinnedMeshRenderer[] associatedAccessories)
     {
-        targetArmature = target;
+        _associatedAccessories = associatedAccessories;
     }
 
-    public Transform getTargetRootBone()
+    public void setAssociatedAccessoryBlendShapes(Dictionary<SkinnedMeshRenderer, string[]> associatedAccessorBlendShapes)
     {
-        return targetRootBone;
-    }
-
-    public void setTargetRootBone(Transform target)
-    {
-        targetRootBone = target;
-    }
-
-    public VRCExpressionsMenu getTargetSubMenu()
-    {
-        return targetSubMenu;
-    }
-
-    public void setTargetSubMenu(VRCExpressionsMenu target)
-    {
-        targetSubMenu = target;
-    }
-
-    public AnimationClip getTargetFemaleAnimationClip()
-    {
-        return targetFemaleAnimationClip;
-    }
-
-    public void setTargetFemaleAnimationClip(AnimationClip target)
-    {
-        targetFemaleAnimationClip = target;
-    }
-
-    public string getFemaleBlendShapeName()
-    {
-        return femaleBlendShapeName;
-    }
-
-    public void setFemaleBlendShapeName(string target)
-    {
-        femaleBlendShapeName = target;
+        _associatedAccessoryBlendShapes = associatedAccessorBlendShapes;
     }
 
     AnimatorController getFXController()
     {
-        VRCAvatarDescriptor.CustomAnimLayer fx = Array.Find(targetAvatarDescriptor.baseAnimationLayers,
+        VRCAvatarDescriptor.CustomAnimLayer fx = Array.Find(_avatar.baseAnimationLayers,
             l => l.type == VRCAvatarDescriptor.AnimLayerType.FX);
         return fx.animatorController as AnimatorController;        
     }
 
-    AnimationClip createAnimationClip(string targetName)
+    AnimationClip createAnimationClip(string name)
     {
         if(!AssetDatabase.IsValidFolder("Assets/GeneratedAnimations"))
         {    
             AssetDatabase.CreateFolder("Assets", "GeneratedAnimations");
         }
-        AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"Assets/GeneratedAnimations/{targetName}.anim");
+        AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"Assets/GeneratedAnimations/{name}.anim");
         AnimationCurve animationCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f));
     
         if (!animationClip) {
             animationClip = new AnimationClip();
-            animationClip.SetCurve(targetName, typeof(GameObject), "m_IsActive", animationCurve);
-            AssetDatabase.CreateAsset(animationClip, $"Assets/GeneratedAnimations/{targetName}.anim");
+            animationClip.SetCurve(name, typeof(GameObject), "m_IsActive", animationCurve);
+            AssetDatabase.CreateAsset(animationClip, $"Assets/GeneratedAnimations/{name}.anim");
         }
         else
         {
-            animationClip.SetCurve(targetName, typeof(GameObject), "m_IsActive", animationCurve);
+            animationClip.SetCurve(name, typeof(GameObject), "m_IsActive", animationCurve);
         }
 
         AnimationCurve blendShapeCurve = new AnimationCurve(new Keyframe(0.0f, 100.0f));
-        foreach(SkinnedMeshRenderer renderer in associatedMeshRenderers)
+        foreach(SkinnedMeshRenderer accessory in _associatedAccessories)
         {
-            string[] blendShapes = associatedBlendShapes[renderer];
-            foreach(string blendShape in blendShapes)
+            if (accessory != null)
             {
-                animationClip.SetCurve(renderer.gameObject.name, typeof(SkinnedMeshRenderer), $"blendShape.{blendShape}", blendShapeCurve);
+                Undo.RegisterCompleteObjectUndo(accessory, "Accessory Animation");
+                string[] blendShapes = _associatedAccessoryBlendShapes[accessory];
+                foreach(string blendShape in blendShapes)
+                {
+                    animationClip.SetCurve(accessory.gameObject.name, typeof(SkinnedMeshRenderer), $"blendShape.{blendShape}", blendShapeCurve);
+                }
             }
         }
 
@@ -281,38 +134,32 @@ public class ApplyAccessories : MonoBehaviour
         return animationClip;
     }
 
-    void updateAnimatorController(string targetName)
+    void updateAnimatorController(string name, AnimationClip animationClip)
     {
         AnimatorController animatorController = getFXController();
         AnimatorControllerLayer animatorControllerLayer;
 
         // If the parameter already exists, then we already created everything and this step is unnecessary.
-        if (Array.Find(animatorController.parameters, (parameter) => { return parameter.name == targetName; } ) == null)
-            animatorController.AddParameter(targetName, AnimatorControllerParameterType.Bool);
+        if (Array.Find(animatorController.parameters, (parameter) => { return parameter.name == name; } ) == null)
+            animatorController.AddParameter(name, AnimatorControllerParameterType.Bool);
         else
             return;
 
+        Undo.RegisterCompleteObjectUndo(animatorController, "Animator Controller");
         animatorControllerLayer = new AnimatorControllerLayer {
             defaultWeight = 1.0f,
-            name = targetName,
+            name = name,
             stateMachine = new AnimatorStateMachine()
         };
         animatorController.AddLayer(animatorControllerLayer);
-        
 
         AnimatorStateMachine stateMachine = animatorControllerLayer.stateMachine;
         AnimatorState wait = stateMachine.AddState("Wait");
-        AnimatorState target = stateMachine.AddState(targetName);
-
-        AnimatorTransition defaultTransition = new AnimatorTransition {
-            destinationState = wait,
-        };
-        AnimatorTransition[] entryTransitions = { defaultTransition };
-        stateMachine.entryTransitions = entryTransitions;
+        AnimatorState target = stateMachine.AddState(name);
 
         AnimatorCondition enableCondition = new AnimatorCondition {
             mode = AnimatorConditionMode.If,
-            parameter = targetName
+            parameter = name
         };
         AnimatorCondition[] enableConditions = { enableCondition };
         AnimatorStateTransition enableTransition = new AnimatorStateTransition {
@@ -324,7 +171,7 @@ public class ApplyAccessories : MonoBehaviour
 
         AnimatorCondition disableCondition = new AnimatorCondition {
             mode = AnimatorConditionMode.IfNot,
-            parameter = targetName
+            parameter = name
         };
         AnimatorCondition[] disableConditions = { disableCondition };
         AnimatorStateTransition disableTransition = new AnimatorStateTransition {
@@ -334,16 +181,15 @@ public class ApplyAccessories : MonoBehaviour
         };
         target.AddTransition(disableTransition);
 
-        AnimationClip animationClip = createAnimationClip(targetName);
         target.motion = animationClip;
     }
 
-    bool hasEnoughParameters(string[] targetNames, int required)
+    bool hasEnoughParameters(string[] names, int required)
     {
         int usedBits = 0;
-        foreach (VRCExpressionParameters.Parameter param in targetAvatarDescriptor.expressionParameters.parameters)
+        foreach (VRCExpressionParameters.Parameter param in _avatar.expressionParameters.parameters)
         {
-            if (param != null && param.name != "" && !Array.Exists(targetNames, element => element == param.name))
+            if (param != null && param.name != "" && !Array.Exists(names, element => element == param.name))
             {
                 usedBits += param.valueType == VRCExpressionParameters.ValueType.Bool ? 1 : 8;
             }
@@ -351,34 +197,21 @@ public class ApplyAccessories : MonoBehaviour
         return usedBits <= (128 - required);
     }
 
-    bool hasEnoughMenuControls(string[] targetNames, int required)
+    VRCExpressionParameters.Parameter addParameterToExpressions(string name, int required)
     {
-        foreach (VRCExpressionsMenu.Control control in targetSubMenu.controls)
-        {
-            if (Array.Exists(targetNames, element => element == control.name))
-            {
-                required -= 1;
-            }
-        }
-        return (8 - targetSubMenu.controls.Count) >= required;
-    }
-
-    VRCExpressionParameters.Parameter addParameterToExpressions(string targetName, int required)
-    {
-        VRCExpressionParameters.Parameter[] existingParameters = targetAvatarParameters.parameters;
+        Undo.RegisterCompleteObjectUndo(_avatarParameters, "Target Avatar Parameters");
+        VRCExpressionParameters.Parameter[] existingParameters = _avatarParameters.parameters;
 
         foreach (VRCExpressionParameters.Parameter parameter in existingParameters)
         {
-            if (parameter.name == targetName)
+            if (parameter.name == name)
             {
                 return parameter;
             }
         }
 
-        string[] targetNames = { targetName };
-
         VRCExpressionParameters.Parameter p = new VRCExpressionParameters.Parameter {
-            name = targetName,
+            name = name,
             valueType = VRCExpressionParameters.ValueType.Bool,
             defaultValue = 0.0f,
             saved = true
@@ -386,35 +219,37 @@ public class ApplyAccessories : MonoBehaviour
 
         Array.Resize(ref existingParameters, existingParameters.Length + 1);
         existingParameters[existingParameters.Length - 1] = p;
-        targetAvatarParameters.parameters = existingParameters;
+        _avatarParameters.parameters = existingParameters;
 
         return p;
     }
 
-    void addParameterToSubmenu(string targetName, int required)
+    void addParameterToSubmenu(string name, int required, VRCExpressionsMenu menu)
     {
-        foreach (VRCExpressionsMenu.Control control in targetSubMenu.controls)
+        Undo.RegisterCompleteObjectUndo(menu, "Target Submenu");
+        foreach (VRCExpressionsMenu.Control control in menu.controls)
         {
-            if (control.name == targetName)
+            if (control.name == name)
             {
                 return;
             }
         }
 
         VRCExpressionsMenu.Control targetControl = new VRCExpressionsMenu.Control {
-            name = targetName,
+            name = name,
             type = VRCExpressionsMenu.Control.ControlType.Toggle,
             parameter = new VRCExpressionsMenu.Control.Parameter {
-                name = targetName
+                name = name
             }
         };
-        targetSubMenu.controls.Add(targetControl);
+        menu.controls.Add(targetControl);
     }
 
-    void updateFemaleAnimationClip(string targetName)
+    void updateFemaleAnimationClip(string name)
     {
+        Undo.RegisterCompleteObjectUndo(_femaleAnim, "Target female animation clip");
         AnimationCurve animationCurve = new AnimationCurve(new Keyframe(0.0f, 100.0f));
-        targetFemaleAnimationClip.SetCurve(targetName, typeof(SkinnedMeshRenderer), $"blendShape.{femaleBlendShapeName}", animationCurve);
+        _femaleAnim.SetCurve(name, typeof(SkinnedMeshRenderer), $"blendShape.{_femaleBlendShape}", animationCurve);
 
         AssetDatabase.SaveAssets();
     }
@@ -422,86 +257,45 @@ public class ApplyAccessories : MonoBehaviour
     [ContextMenu("Reassign Bones")]
     public void Reassign()
     {
-        if (targetAvatarDescriptor == null) {
-            Debug.Log("You need to assign a target avatar descriptor");
+        Undo.IncrementCurrentGroup();
+        Undo.SetCurrentGroupName("Apply Accessories");
+        int undoGroupIndex = Undo.GetCurrentGroup();
+
+        if (_avatar == null) {
+            Debug.LogError("You need to assign a target avatar descriptor");
             return;
         }
 
-        if (targetArmature == null)
+        // Create a duplicate that isn't a prefab and delete the prefab, so it can be return on undo
+        GameObject accessory = UnityEngine.Object.Instantiate(_accessory);
+        Undo.RegisterCreatedObjectUndo(accessory, "Accessory");
+        Undo.DestroyObjectImmediate(_accessory);
+        _accessory = accessory;
+
+        SkinnedMeshRenderer[] accessoryMeshRenderers = _accessory.GetComponentsInChildren<SkinnedMeshRenderer>();
+
+        _armature = _avatar.transform.Find("Armature");
+        _avatarParameters = _avatar.expressionParameters;
+
+        string[] names = {};
+        Array.Resize(ref names, accessoryMeshRenderers.Length);
+        for (int i = 0; i < accessoryMeshRenderers.Length; i++)
         {
-            targetArmature = targetAvatarDescriptor.transform.Find("Armature");
-            if (targetArmature == null)
-            {
-                Debug.Log("Please manually specify the avatar armature");
-                return;
-            }
+            names[i] = accessoryMeshRenderers[i].name;
         }
 
-        if (targetRootBone == null) {
-            Transform[] children = targetArmature.GetComponentsInChildren<Transform>();
- 
-            bool found = false;
-            foreach (Transform child in children)
-            {
-                if (child.parent == targetArmature)
-                {
-                    if (found)
-                    {
-                        Debug.Log("Please manually specify the avatar root bone");
-                        return;
-                    }
-                    targetRootBone = child;
-                    found = true;
-                }
-            }
-            if (!found)
-            {
-                Debug.Log("Please manually specify the avatar root bone");
-                return;
-            }
-        }
-
-        try
-        {
-            PrefabUtility.UnpackPrefabInstance(this.gameObject, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-        }
-        catch (ArgumentException)
-        {
-            Debug.Log("Gameobject is already unpacked.");
-        }
-
-        targetAvatarParameters = targetAvatarDescriptor.expressionParameters;
-
-        Debug.Log("Starting to reassign bones");
-        SkinnedMeshRenderer[] meshRenderers = gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
-        string[] targetNames = {};
-        Array.Resize(ref targetNames, meshRenderers.Length);
-
-        for (int i = 0; i < meshRenderers.Length; i++)
-        {
-            targetNames[i] = meshRenderers[i].name;
-        }
-
-        Debug.Log($"Processing {meshRenderers.Length} meshes");
-
-        if (targetSubMenu != null && !hasEnoughParameters(targetNames, meshRenderers.Length))
+        if ((_menu != null || _menus != null) && !hasEnoughParameters(names, accessoryMeshRenderers.Length))
         {
             Debug.LogError("Not enough available parameters to add all accessories. Remove the Submenu parameter to reassign armature and have accessories permanently on.");
             return;
         }
 
-        if (targetSubMenu != null && !hasEnoughMenuControls(targetNames, meshRenderers.Length))
+        foreach (SkinnedMeshRenderer subAccessory in accessoryMeshRenderers)
         {
-            Debug.LogError("The selected submenu does not have enough control spots available to add all necessary controllers.");
-            return;
-        }
+            Undo.RecordObject(subAccessory.gameObject, "Accessory");
 
-        foreach (SkinnedMeshRenderer meshRenderer in meshRenderers)
-        {
-            Debug.LogFormat("Starting to reassign bones for {0}", meshRenderer.gameObject.name);
-
-            Transform[] sourceBones = meshRenderer.bones;
-            List<Transform> targetBones = new List<Transform>(targetArmature.GetComponentsInChildren<Transform>());
+            Transform[] sourceBones = subAccessory.bones;
+            List<Transform> targetBones = new List<Transform>(_armature.GetComponentsInChildren<Transform>());
 
             for (int s = 0; s < sourceBones.Length; s++)
             {
@@ -510,17 +304,21 @@ public class ApplyAccessories : MonoBehaviour
                 {
                     if (sourceBones[s].name.Contains(targetBones[t].name)) {
                         Component[] components = sourceBones[s].gameObject.GetComponents<Component>();
-                        if (components.Length > 1 || targetNestArmature)
+                        if (components.Length > 1 || _nestArmature)
                         {
                             if (sourceBones[s].name == targetBones[t].name) {
-                                sourceBones[s].name += $"_{meshRenderer.gameObject.name}";
+                                sourceBones[s].name += $"_{subAccessory.name}";
                             }
                             if (sourceBones[s].name == targetBones[t].name) {
+                                if (subAccessory.rootBone = sourceBones[s])
+                                {
+                                    subAccessory.rootBone = targetBones[t];
+                                }
                                 sourceBones[s] = targetBones[t];
                                 targetBones.RemoveAt(t);
                                 break;
                             }
-                            sourceBones[s].parent = targetBones[t];
+                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
                         }
                         else
                         {
@@ -531,14 +329,14 @@ public class ApplyAccessories : MonoBehaviour
                         break;
                     }
                 }
-                if (!matched && !targetNestArmature)
+                if (!matched && !_nestArmature)
                 {
                     string parentName = sourceBones[s].parent.name;
                     for (int t = 0; t < targetBones.Count; t++)
                     {
                         if (parentName.Contains(targetBones[t].name))
                         {
-                            sourceBones[s].parent = targetBones[t];
+                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
                             break;
                         }
                     }
@@ -546,29 +344,41 @@ public class ApplyAccessories : MonoBehaviour
                     {
                         if (parentName.Contains(sourceBones[t].name))
                         {
-                            sourceBones[s].parent = sourceBones[t];
+                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
                             break;
                         }
                     }
                 }
             }
 
-            meshRenderer.rootBone = targetRootBone;
-            meshRenderer.bones = sourceBones;
+            subAccessory.bones = sourceBones;
 
-            if (targetSubMenu != null)
-            {
-                addParameterToExpressions(meshRenderer.name, meshRenderers.Length);
-                addParameterToSubmenu(meshRenderer.name, meshRenderers.Length);
-                updateAnimatorController(meshRenderer.name);
-                if (targetFemaleAnimationClip != null)
-                    updateFemaleAnimationClip(meshRenderer.name);
-                meshRenderer.gameObject.SetActive(false);
-            }
+            addParameterToExpressions(subAccessory.name, accessoryMeshRenderers.Length);
+            
+            VRCExpressionsMenu menu = null;
+            if (_reuseMenu)
+                menu = _menu;
+            else if (_menus.ContainsKey(subAccessory.name))
+                menu = _menus[subAccessory.name];
 
-            meshRenderer.gameObject.transform.parent = targetAvatarDescriptor.gameObject.transform;
+            if (menu != null)
+                addParameterToSubmenu(subAccessory.name, accessoryMeshRenderers.Length, menu);
+
+            AnimationClip animationClip;
+            if (_customAnims.ContainsKey(subAccessory.name))
+                animationClip = _customAnims[subAccessory.name];
+            else
+                animationClip = createAnimationClip(subAccessory.name);
+            updateAnimatorController(subAccessory.name, animationClip);
+
+            if (_femaleAnim != null)
+                updateFemaleAnimationClip(subAccessory.name);
+
+            subAccessory.gameObject.SetActive(false);
+            Undo.SetTransformParent(subAccessory.gameObject.transform, _avatar.gameObject.transform, subAccessory.name);
         }
 
-        DestroyImmediate(this.gameObject);
+        Undo.DestroyObjectImmediate(_accessory);
+        Undo.CollapseUndoOperations(undoGroupIndex);
     }
 }
