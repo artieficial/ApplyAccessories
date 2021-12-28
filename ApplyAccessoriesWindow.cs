@@ -232,9 +232,10 @@ public class ApplyAccessoriesWindow : EditorWindow
                         for (int k = 0; k < mesh.blendShapeCount; k++)
                         {
                             string blendShapeName = mesh.GetBlendShapeName(k);
+                            int associatedAccessoryIndex = i;
                             int blendShapeIndex = j;
-                            dropdown.AddItem(new GUIContent(blendShapeName), _associatedAccessoryBlendShapes[_associatedAccessories[i]][j] == blendShapeName, selected => {
-                                blendShapes[blendShapeIndex] = (string)selected;
+                            dropdown.AddItem(new GUIContent(blendShapeName), blendShapes[j] == blendShapeName, selected => {
+                                _associatedAccessoryBlendShapes[_associatedAccessories[associatedAccessoryIndex]][blendShapeIndex] = (string)selected;
                             }, blendShapeName);
                         }
 
