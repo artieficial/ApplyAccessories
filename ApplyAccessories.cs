@@ -284,7 +284,7 @@ public class ApplyAccessories
             names[i] = accessoryMeshRenderers[i].name;
         }
 
-        if ((_menu != null || _menus != null) && !hasEnoughParameters(names, accessoryMeshRenderers.Length))
+        if ((_menu != null || _reuseMenu) && !hasEnoughParameters(names, accessoryMeshRenderers.Length))
         {
             Debug.LogError("Not enough available parameters to add all accessories. Remove the Submenu parameter to reassign armature and have accessories permanently on.");
             return;
@@ -308,9 +308,7 @@ public class ApplyAccessories
                         {
                             if (sourceBones[s].name == targetBones[t].name) {
                                 sourceBones[s].name += $"_{subAccessory.name}";
-                            }
-                            if (sourceBones[s].name == targetBones[t].name) {
-                                if (subAccessory.rootBone = sourceBones[s])
+                                if (subAccessory.rootBone == sourceBones[s])
                                 {
                                     subAccessory.rootBone = targetBones[t];
                                 }
@@ -322,12 +320,21 @@ public class ApplyAccessories
                         }
                         else
                         {
+                            if (subAccessory.rootBone == sourceBones[s])
+                            {
+                                subAccessory.rootBone = targetBones[t];
+                            }
                             sourceBones[s] = targetBones[t];
                         }
                         
                         targetBones.RemoveAt(t);
                         break;
                     }
+
+                    if (targetBones[t].parent == _armature && subAccessory.rootBone == null)
+                    {
+                        subAccessory.rootBone = targetBones[t];
+                    }  
                 }
                 if (!matched && !_nestArmature)
                 {
@@ -352,8 +359,6 @@ public class ApplyAccessories
             }
 
             subAccessory.bones = sourceBones;
-
-            addParameterToExpressions(subAccessory.name, accessoryMeshRenderers.Length);
             
             VRCExpressionsMenu menu = null;
             if (_reuseMenu)
@@ -362,6 +367,7 @@ public class ApplyAccessories
                 menu = _menus[subAccessory.name];
 
             if (menu != null)
+                addParameterToExpressions(subAccessory.name, accessoryMeshRenderers.Length);
                 addParameterToSubmenu(subAccessory.name, accessoryMeshRenderers.Length, menu);
 
             AnimationClip animationClip;
