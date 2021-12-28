@@ -3,4 +3,4 @@ Useful tool for merging armatures in Unity and adding accessories in VRChat. All
 
 ## Youtube Video
 
-For more information on how to use the script, you can check out this Youtube video: https://www.youtube.com/watch?v=fMH9J1ACBOo
+For more information on how to use the script, you can check out this Youtube video: https://www.youtube.com/watch?v=d1GgVg75NGA
