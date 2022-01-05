@@ -34,6 +34,11 @@ public class ApplyAccessories
     private SkinnedMeshRenderer[] _associatedAccessories = {};
     private Dictionary<SkinnedMeshRenderer, string[]> _associatedAccessoryBlendShapes = new Dictionary<SkinnedMeshRenderer, string[]>();
 
+    public ApplyAccessories()
+    {
+        Undo.undoRedoPerformed += AssetDatabase.SaveAssets;
+    }
+
     public void setAvatar(VRCAvatarDescriptor avatar)
     {
         _avatar = avatar;
@@ -151,7 +156,6 @@ public class ApplyAccessories
             name = name,
             stateMachine = new AnimatorStateMachine()
         };
-        animatorController.AddLayer(animatorControllerLayer);
 
         AnimatorStateMachine stateMachine = animatorControllerLayer.stateMachine;
         AnimatorState wait = stateMachine.AddState("Wait");
@@ -180,8 +184,17 @@ public class ApplyAccessories
             duration = 0.0f
         };
         target.AddTransition(disableTransition);
-
         target.motion = animationClip;
+
+        string animatorControllerPath = AssetDatabase.GetAssetPath(animatorController);
+        AssetDatabase.AddObjectToAsset(stateMachine, animatorControllerPath);
+        AssetDatabase.AddObjectToAsset(wait, animatorControllerPath);
+        AssetDatabase.AddObjectToAsset(target, animatorControllerPath);
+        AssetDatabase.AddObjectToAsset(enableTransition, animatorControllerPath);
+        AssetDatabase.AddObjectToAsset(disableTransition, animatorControllerPath);
+
+        animatorController.AddLayer(animatorControllerLayer);
+        AssetDatabase.SaveAssets();
     }
 
     bool hasEnoughParameters(string[] names, int required)
@@ -367,8 +380,10 @@ public class ApplyAccessories
                 menu = _menus[subAccessory.name];
 
             if (menu != null)
+            {
                 addParameterToExpressions(subAccessory.name, accessoryMeshRenderers.Length);
                 addParameterToSubmenu(subAccessory.name, accessoryMeshRenderers.Length, menu);
+            }
 
             AnimationClip animationClip;
             if (_customAnims.ContainsKey(subAccessory.name))
