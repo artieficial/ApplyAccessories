@@ -34,6 +34,9 @@ public class ApplyAccessories
     private SkinnedMeshRenderer[] _associatedAccessories = {};
     private Dictionary<SkinnedMeshRenderer, string[]> _associatedAccessoryBlendShapes = new Dictionary<SkinnedMeshRenderer, string[]>();
 
+    private HashSet<int> _visitedBones = new HashSet<int>();
+    private Dictionary<Transform, DynamicBone> _dynamicBones = new Dictionary<Transform, DynamicBone>();
+
     public ApplyAccessories()
     {
         Undo.undoRedoPerformed += AssetDatabase.SaveAssets;
@@ -267,6 +270,72 @@ public class ApplyAccessories
         AssetDatabase.SaveAssets();
     }
 
+    Transform[] recurseBones(int s, Transform[] sourceBones, List<Transform> targetBones, ref SkinnedMeshRenderer subAccessory)
+    {
+        if (_visitedBones.Contains(s))
+        {
+            return sourceBones;
+        }
+        _visitedBones.Add(s);
+
+        for (int t = 0; t < targetBones.Count; t++)
+        {
+            if (sourceBones[s].name.Contains(targetBones[t].name) || sourceBones[s].name.Replace('_', ' ').Contains(targetBones[t].name))
+            {
+                Component[] components = sourceBones[s].gameObject.GetComponents<Component>();
+                if (components.Length > 1 || _nestArmature)
+                {
+                    if (sourceBones[s].name == targetBones[t].name) {
+                        sourceBones[s].name += $"_{subAccessory.name}";
+                        if (subAccessory.rootBone == sourceBones[s])
+                        {
+                            subAccessory.rootBone = targetBones[t];
+                        }
+                        foreach (Transform child in sourceBones[s])
+                        {
+                            if (child.parent == sourceBones[s])
+                            {
+                                int sc = Array.FindIndex(sourceBones, x => x == child);
+
+                                if (sc >= 0 && sc < sourceBones.Length)
+                                    sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
+
+                                if (sourceBones[sc].parent == sourceBones[s])
+                                    Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                            }
+                        }
+                        sourceBones[s] = targetBones[t];
+                        break;
+                    }
+                    Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
+                }
+                else
+                {
+                    if (subAccessory.rootBone == sourceBones[s])
+                    {
+                        subAccessory.rootBone = targetBones[t];
+                    }
+                    foreach (Transform child in sourceBones[s])
+                    {
+                        if (child.parent == sourceBones[s])
+                        {
+                            int sc = Array.FindIndex(sourceBones, x => x == child);
+
+                            if (sc >= 0 && sc < sourceBones.Length)
+                                sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
+
+                            if (sourceBones[sc].parent == sourceBones[s])
+                                Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                        }
+                    }
+                    sourceBones[s] = targetBones[t];
+                }
+            }
+        }
+
+        return sourceBones;
+    }
+
     [ContextMenu("Reassign Bones")]
     public void Reassign()
     {
@@ -303,72 +372,57 @@ public class ApplyAccessories
             return;
         }
 
-        foreach (SkinnedMeshRenderer subAccessory in accessoryMeshRenderers)
+        for (int a = 0; a < accessoryMeshRenderers.Length; a++)
         {
+            SkinnedMeshRenderer subAccessory = accessoryMeshRenderers[a];
             Undo.RecordObject(subAccessory.gameObject, "Accessory");
 
             Transform[] sourceBones = subAccessory.bones;
             List<Transform> targetBones = new List<Transform>(_armature.GetComponentsInChildren<Transform>());
 
-            for (int s = 0; s < sourceBones.Length; s++)
+            if (Type.GetType("DynamicBone") != null)
             {
-                bool matched = false;
-                for (int t = 0; t < targetBones.Count; t++)
-                {
-                    if (sourceBones[s].name.Contains(targetBones[t].name)) {
-                        Component[] components = sourceBones[s].gameObject.GetComponents<Component>();
-                        if (components.Length > 1 || _nestArmature)
-                        {
-                            if (sourceBones[s].name == targetBones[t].name) {
-                                sourceBones[s].name += $"_{subAccessory.name}";
-                                if (subAccessory.rootBone == sourceBones[s])
-                                {
-                                    subAccessory.rootBone = targetBones[t];
-                                }
-                                sourceBones[s] = targetBones[t];
-                                targetBones.RemoveAt(t);
-                                break;
-                            }
-                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
-                        }
-                        else
-                        {
-                            if (subAccessory.rootBone == sourceBones[s])
-                            {
-                                subAccessory.rootBone = targetBones[t];
-                            }
-                            sourceBones[s] = targetBones[t];
-                        }
-                        
-                        targetBones.RemoveAt(t);
-                        break;
-                    }
+                DynamicBone[] dynamicBones = subAccessory.gameObject.GetComponentsInChildren<DynamicBone>();
 
-                    if (targetBones[t].parent == _armature && subAccessory.rootBone == null)
-                    {
-                        subAccessory.rootBone = targetBones[t];
-                    }  
-                }
-                if (!matched && !_nestArmature)
+                for (int i = 0; i < dynamicBones.Length; i++)
                 {
-                    string parentName = sourceBones[s].parent.name;
                     for (int t = 0; t < targetBones.Count; t++)
                     {
-                        if (parentName.Contains(targetBones[t].name))
+                        if (dynamicBones[i].m_Root.name.Contains(targetBones[t].name) || dynamicBones[i].m_Root.name.Replace('_', ' ').Contains(targetBones[t].name))
                         {
-                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
-                            break;
+                            dynamicBones[i].m_Root = targetBones[t];
                         }
                     }
-                    for (int t = 0; t < sourceBones.Length; t++)
+
+                    for (int j = 0; j < dynamicBones[i].m_Roots.Count; j++)
                     {
-                        if (parentName.Contains(sourceBones[t].name))
+                        for (int t = 0; t < targetBones.Count; t++)
                         {
-                            Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
-                            break;
+                            if (dynamicBones[i].m_Roots[j].name.Contains(targetBones[t].name) || dynamicBones[i].m_Roots[j].name.Replace('_', ' ').Contains(targetBones[t].name))
+                            {
+                                dynamicBones[i].m_Roots[j] = targetBones[t];
+                            }
                         }
                     }
                 }
+            }
+
+            for (int s = 0; s < sourceBones.Length; s++)
+            {
+                if (_visitedBones.Contains(s))
+                    continue;
+
+                sourceBones = recurseBones(s, sourceBones, targetBones, ref subAccessory);
+            }
+
+            _visitedBones.Clear();
+
+            for (int t = 0; t < targetBones.Count; t++)
+            {
+                if (targetBones[t].parent == _armature && subAccessory.rootBone == null)
+                {
+                    subAccessory.rootBone = targetBones[t];
+                }  
             }
 
             subAccessory.bones = sourceBones;

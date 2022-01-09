@@ -14,6 +14,7 @@ using VRC.SDK3.Avatars.ScriptableObjects;
 
 public class ApplyAccessoriesWindow : EditorWindow
 {
+    private String version = "v1.1.4";
     private ApplyAccessories applyAccessories = new ApplyAccessories();
     private Vector2 scroll;
 
@@ -58,9 +59,13 @@ public class ApplyAccessoriesWindow : EditorWindow
         EditorGUILayout.LabelField("Apply Accessories", styleTitle);
         EditorGUILayout.Space();
 
+        GUIStyle styleVersion = new GUIStyle(GUI.skin.label);
+        EditorGUILayout.LabelField(version, styleVersion);
+        EditorGUILayout.Space();
+
         GUIStyle styleDescription = new GUIStyle(GUI.skin.label);
         styleDescription.wordWrap = true;
-        EditorGUILayout.LabelField("The follow script works like the old one, drag the game object you would have attached the component to into the source accessory slot. If the clothing/accessory clips or looks warped, try enabling the nest armature option.", styleDescription);
+        EditorGUILayout.LabelField("The following script works like the old one, drag the game object you would have attached the component to into the \"Accessory\" slot. If the clothing/accessory clips or looks warped, try enabling the \"Don't Reuse Bones\" option. If something isn't working, try checking the Github page for an updated release, or add an issue.", styleDescription);
         EditorGUILayout.Space();
     }
 
