@@ -299,10 +299,12 @@ public class ApplyAccessories
                                 int sc = Array.FindIndex(sourceBones, x => x == child);
 
                                 if (sc >= 0 && sc < sourceBones.Length)
+                                {
                                     sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
 
-                                if (sourceBones[sc].parent == sourceBones[s])
-                                    Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                                    if (sourceBones[sc].parent == sourceBones[s])
+                                        Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                                }
                             }
                         }
                         sourceBones[s] = targetBones[t];
