@@ -36,6 +36,8 @@ public class ApplyAccessories
 
     private HashSet<int> _visitedBones = new HashSet<int>();
 
+    // private Dictionary<Transform, DynamicBone> _dynamicBones = new Dictionary<Transform, DynamicBone>();
+
     public ApplyAccessories()
     {
         Undo.undoRedoPerformed += AssetDatabase.SaveAssets;
@@ -321,10 +323,12 @@ public class ApplyAccessories
                             int sc = Array.FindIndex(sourceBones, x => x == child);
 
                             if (sc >= 0 && sc < sourceBones.Length)
+                            {
                                 sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
 
-                            if (sourceBones[sc].parent == sourceBones[s])
-                                Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                                if (sourceBones[sc].parent == sourceBones[s])
+                                    Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
+                            }
                         }
                     }
                     sourceBones[s] = targetBones[t];
@@ -378,6 +382,33 @@ public class ApplyAccessories
 
             Transform[] sourceBones = subAccessory.bones;
             List<Transform> targetBones = new List<Transform>(_armature.GetComponentsInChildren<Transform>());
+
+            // if (Type.GetType("DynamicBone") != null)
+            // {
+            //     DynamicBone[] dynamicBones = subAccessory.gameObject.GetComponentsInChildren<DynamicBone>();
+
+            //     for (int i = 0; i < dynamicBones.Length; i++)
+            //     {
+            //         for (int t = 0; t < targetBones.Count; t++)
+            //         {
+            //             if (dynamicBones[i].m_Root.name.Contains(targetBones[t].name) || dynamicBones[i].m_Root.name.Replace('_', ' ').Contains(targetBones[t].name))
+            //             {
+            //                 dynamicBones[i].m_Root = targetBones[t];
+            //             }
+            //         }
+
+            //         for (int j = 0; j < dynamicBones[i].m_Roots.Count; j++)
+            //         {
+            //             for (int t = 0; t < targetBones.Count; t++)
+            //             {
+            //                 if (dynamicBones[i].m_Roots[j].name.Contains(targetBones[t].name) || dynamicBones[i].m_Roots[j].name.Replace('_', ' ').Contains(targetBones[t].name))
+            //                 {
+            //                     dynamicBones[i].m_Roots[j] = targetBones[t];
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
             for (int s = 0; s < sourceBones.Length; s++)
             {
