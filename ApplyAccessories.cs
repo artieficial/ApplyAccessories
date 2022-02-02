@@ -288,29 +288,26 @@ public class ApplyAccessories
                 {
                     if (sourceBones[s].name == targetBones[t].name) {
                         sourceBones[s].name += $"_{subAccessory.name}";
-                        if (subAccessory.rootBone == sourceBones[s])
+                    }
+                    if (subAccessory.rootBone == sourceBones[s])
+                    {
+                        subAccessory.rootBone = targetBones[t];
+                    }
+                    foreach (Transform child in sourceBones[s])
+                    {
+                        // Get direct descendants only
+                        if (child.parent == sourceBones[s])
                         {
-                            subAccessory.rootBone = targetBones[t];
-                        }
-                        foreach (Transform child in sourceBones[s])
-                        {
-                            if (child.parent == sourceBones[s])
+                            int sc = Array.FindIndex(sourceBones, x => x == child);
+                            
+                            if (sc >= 0 && sc < sourceBones.Length)
                             {
-                                int sc = Array.FindIndex(sourceBones, x => x == child);
-
-                                if (sc >= 0 && sc < sourceBones.Length)
-                                {
-                                    sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
-
-                                    if (sourceBones[sc].parent == sourceBones[s])
-                                        Undo.SetTransformParent(child, targetBones[t], sourceBones[s].gameObject.name);
-                                }
+                                sourceBones = recurseBones(sc, sourceBones, targetBones, ref subAccessory);
                             }
                         }
-                        sourceBones[s] = targetBones[t];
-                        break;
                     }
                     Undo.SetTransformParent(sourceBones[s], targetBones[t], sourceBones[s].gameObject.name);
+                    break;
                 }
                 else
                 {
