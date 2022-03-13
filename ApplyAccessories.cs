@@ -439,6 +439,11 @@ public class ApplyAccessories
             {
                 addParameterToExpressions(subAccessory.name, accessoryMeshRenderers.Length);
                 addParameterToSubmenu(subAccessory.name, accessoryMeshRenderers.Length, menu);
+                subAccessory.gameObject.SetActive(false);
+            }
+            else
+            {
+                subAccessory.gameObject.SetActive(true);
             }
 
             AnimationClip animationClip;
@@ -451,7 +456,6 @@ public class ApplyAccessories
             if (_femaleAnim != null)
                 updateFemaleAnimationClip(subAccessory.name);
 
-            subAccessory.gameObject.SetActive(false);
             Undo.SetTransformParent(subAccessory.gameObject.transform, _avatar.gameObject.transform, subAccessory.name);
         }
 

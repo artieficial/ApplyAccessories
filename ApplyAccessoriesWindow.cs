@@ -14,7 +14,7 @@ using VRC.SDK3.Avatars.ScriptableObjects;
 
 public class ApplyAccessoriesWindow : EditorWindow
 {
-    private String version = "v1.1.8 Standard";
+    private String version = "v1.1.9 Standard";
     private ApplyAccessories applyAccessories = new ApplyAccessories();
     private Vector2 scroll;
 
