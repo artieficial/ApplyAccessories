@@ -368,7 +368,7 @@ public class ApplyAccessories
             names[i] = accessoryMeshRenderers[i].name;
         }
 
-        if ((_menu != null || _reuseMenu) && !hasEnoughParameters(names, accessoryMeshRenderers.Length))
+        if ((_menu != null && _reuseMenu) && !hasEnoughParameters(names, accessoryMeshRenderers.Length))
         {
             Debug.LogError("Not enough available parameters to add all accessories. Remove the Submenu parameter to reassign armature and have accessories permanently on.");
             return;
