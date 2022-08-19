@@ -211,7 +211,7 @@ public class ApplyAccessories
                 usedBits += param.valueType == VRCExpressionParameters.ValueType.Bool ? 1 : 8;
             }
         }
-        return usedBits <= (128 - required);
+        return usedBits <= (256 - required); // from 128 to 256. Reason: VRChat increased amount of parameters in recent updates.
     }
 
     VRCExpressionParameters.Parameter addParameterToExpressions(string name, int required)
